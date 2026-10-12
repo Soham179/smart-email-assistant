@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Email Assistant</title>
+  <style>
+    body { max-width: 720px; margin: 40px auto; padding: 0 16px; font-family: Arial, sans-serif; color: #202124; }
+    h2 { margin-bottom: 4px; }
+    p.sub { color: #5f6368; margin-top: 0; }
+    label { display: block; margin-top: 16px; font-weight: bold; font-size: 14px; }
+    textarea, input, select {
+      width: 100%; box-sizing: border-box; padding: 10px; font-size: 14px;
+      margin-top: 6px; border: 1px solid #dadce0; border-radius: 6px; font-family: inherit;
+    }
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+    button {
+      padding: 9px 16px; font-size: 14px; border-radius: 6px; margin-top: 12px;
+      margin-right: 8px; background: #1a73e8; color: white; border: none; cursor: pointer;
+    }
+    button.secondary { background: #f1f3f4; color: #202124; border: 1px solid #dadce0; }
+    button:disabled { background: #9aa0a6; cursor: not-allowed; }
+    #output-section { display: none; margin-top: 24px; }
+    .error { color: #d93025; margin-top: 12px; }
+    .hint { font-size: 12px; color: #5f6368; font-weight: normal; }
+  </style>
+</head>
+<body>
+  <h2>Smart Email Assistant</h2>
+  <p class="sub">Paste an email, choose a style, and get an editable reply.</p>
+
+  <label for="email">Original email</label>
+  <textarea id="email" rows="7" placeholder="Paste the email you received..."></textarea>
+
+  <label for="notes">What do you want to say? <span class="hint">(optional, e.g. "I'm free at 3 PM, send a meeting link")</span></label>
+  <textarea id="notes" rows="2" placeholder="Your key points..."></textarea>
+
+  <div class="row">
+    <div>
+      <label for="greeting">Greeting</label>
+      <select id="greeting">
+        <option value="">Let AI decide</option>
+        <option value="Hello">Hello</option>
+        <option value="Hi">Hi</option>
+        <option value="Hello Sir">Hello Sir</option>
+        <option value="Dear Sir/Madam">Dear Sir/Madam</option>
+        <option value="Dear Sir">Dear Sir</option>
+        <option value="Hello man">Hello man</option>
+        <option value="Hey">Hey</option>
+      </select>
+    </div>
+    <div>
+      <label for="tone">Tone</label>
+      <select id="tone">
+        <option value="professional">Professional</option>
+        <option value="friendly">Friendly</option>
+        <option value="casual">Casual</option>
+        <option value="concise">Concise</option>
+        <option value="formal">Formal</option>
+      </select>
+    </div>
+    <div>
+      <label for="sender">Your name <span class="hint">(signature)</span></label>
+      <input id="sender" type="text" placeholder="e.g. Rahul">
+    </div>
+  </div>
+
+  <button id="btn" onclick="generate()">Generate Reply</button>
+  <div id="error" class="error"></div>
+
+  <div id="output-section">
+    <label for="reply">Your reply <span class="hint">(you can edit this text)</span></label>
+    <textarea id="reply" rows="10"></textarea>
+    <button id="copyBtn" class="secondary" onclick="copyReply()">Copy</button>
+    <button class="secondary" onclick="generate()">Regenerate</button>
+  </div>
+
+  <script>
+    async function generate() {
+      const btn = document.getElementById("btn");
+      const errorBox = document.getElementById("error");
+      const email = document.getElementById("email").value.trim();
+
+      errorBox.innerText = "";
+      if (!email) {
+        errorBox.innerText = "Please paste an email first.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Generating...";
+
+      try {
+        const response = await fetch("/api/email/generate/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email_content: email,
+            notes: document.getElementById("notes").value.trim(),
+            greeting: document.getElementById("greeting").value,
+            tone: document.getElementById("tone").value,
+            sender_name: document.getElementById("sender").value.trim(),
+          }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          document.getElementById("reply").value = data.reply;
+          document.getElementById("output-section").style.display = "block";
+        } else {
+          errorBox.innerText = data.error || JSON.stringify(data);
+        }
+      } catch (err) {
+        errorBox.innerText = "Network error: " + err.message;
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Generate Reply";
+    }
+
+    async function copyReply() {
+      const text = document.getElementById("reply").value;
+      await navigator.clipboard.writeText(text);
+      const b = document.getElementById("copyBtn");
+      b.innerText = "Copied!";
+      setTimeout(() => (b.innerText = "Copy"), 1500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Email Assistant",
+  "version": "1.0",
+  "description": "Generate AI email replies inside Gmail using your own Django + Gemini server.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "https://mail.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Smart Email Assistant"
+  }
+}
